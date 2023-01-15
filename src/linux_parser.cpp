@@ -117,6 +117,7 @@ long LinuxParser::Jiffies() {
 long LinuxParser::ActiveJiffies(int pid) {
   string line, value;
   vector<string> values;
+  long utime = 0, stime = 0;
 
   std::ifstream stream(kProcDirectory + std::to_string(pid) + kStatFilename);
 
@@ -129,7 +130,14 @@ long LinuxParser::ActiveJiffies(int pid) {
     }
   }
 
-  return stol(values[13] + values[14]);
+  if (std::all_of(values[13].begin(), values[13].end(), isdigit)) {
+    utime = stol(values[13]);
+  }
+  if (std::all_of(values[14].begin(), values[14].end(), isdigit)) {
+    stime = stol(values[14]);
+  }
+
+  return utime+stime;
 }
 
 // Read and return the number of active jiffies for the system
