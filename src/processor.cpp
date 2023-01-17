@@ -7,14 +7,14 @@
 // Return the aggregate CPU utilization
 float Processor::Utilization() {
   float initial_total = LinuxParser::Jiffies();
-  float initial_active = LinuxParser::ActiveJiffies();
-  float final_total = 0, final_active = 0, delta_total;
+  float initial_idle = LinuxParser::IdleJiffies();
+  float final_total = 0, final_idle = 0, delta_total;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
   final_total = LinuxParser::Jiffies();
-  final_active = LinuxParser::ActiveJiffies();
+  final_idle = LinuxParser::IdleJiffies();
   delta_total = final_total - initial_total;
 
-  return delta_total == 0 ? delta_total : (final_active - initial_active)/delta_total;
+  return delta_total == 0 ? delta_total : (final_idle - initial_idle)/delta_total;
 }

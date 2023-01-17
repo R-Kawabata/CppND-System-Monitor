@@ -8,6 +8,7 @@
 #include "linux_parser.h"
 
 #define SAMESTRING 0
+#define KILOBYTE 1024
 
 using std::string;
 using std::to_string;
@@ -16,19 +17,23 @@ using std::vector;
 int Process::GetPid() const { return Process::pid; }
 
 float Process::GetCpuUtilization() const {
-  long uptime, process_uptime, pid_total_time, clock;
+  long uptime, process_uptime, pid_total_time, running_second;
   uptime = LinuxParser::UpTime();
-  process_uptime = LinuxParser::UpTime(GetPid());
-  pid_total_time = LinuxParser::ActiveJiffies(GetPid());
-  clock = sysconf(_SC_CLK_TCK);
+  process_uptime = LinuxParser::UpTime(pid);
+  pid_total_time = LinuxParser::ActiveJiffies(pid);
+  running_second = uptime - process_uptime;
 
-  return (pid_total_time*(clock*uptime - process_uptime))/(clock*clock);
+  if (running_second <= 0) {
+    return 0;
+  }
+
+  return pid_total_time/running_second;
 }
 
 string Process::GetCommand() const {
   string cmdline;
 
-  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(GetPid()) + LinuxParser::kCmdlineFilename);
+  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(pid) + LinuxParser::kCmdlineFilename);
 
   if (stream.is_open()) {
     std::getline(stream, cmdline);
@@ -42,7 +47,7 @@ string Process::GetRam() const {
   long virtual_memory_size = 0;
   std::istringstream currentline;
 
-  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(GetPid()) + LinuxParser::kStatusFilename);
+  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(pid) + LinuxParser::kStatusFilename);
 
   if(stream.is_open()){
     while(std::getline(stream, line)){
@@ -57,14 +62,14 @@ string Process::GetRam() const {
     }
   }
 
-  return std::to_string(virtual_memory_size);;
+  return std::to_string(virtual_memory_size/KILOBYTE);;
 }
 
 string Process::GetUid() const {
   string line, key_name, uid;
   std::istringstream currentline;
 
-  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(GetPid()) + LinuxParser::kStatusFilename);
+  std::ifstream stream(LinuxParser::kProcDirectory + std::to_string(pid) + LinuxParser::kStatusFilename);
 
   if (stream.is_open()) {
     while (std::getline(stream, line)) {
